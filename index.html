@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ahorcado — Química Orgánica</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3352;
+    --accent: #7c6ff7;
+    --accent2: #5ce6c0;
+    --danger: #f06a6a;
+    --text: #e8e9f0;
+    --muted: #7b80a0;
+    --correct: #5ce6c0;
+    --wrong: #f06a6a;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  /* HEADER */
+  header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  header .label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  header p {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 680px;
+  }
+
+  /* TOP BAR */
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .stat-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stat-pill span { color: var(--text); font-weight: 600; }
+  .progress-track {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    min-width: 60px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* GALLOWS SVG */
+  .gallows-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+  }
+  .gallows-wrap svg {
+    filter: drop-shadow(0 0 12px rgba(124,111,247,0.15));
+  }
+
+  /* HINT */
+  .hint-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+  }
+  .hint-badge strong { color: var(--accent); font-weight: 600; margin-right: 4px; }
+
+  /* WORD DISPLAY */
+  .word-row {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+  }
+  .letter-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .letter-char {
+    width: 30px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--correct);
+    letter-spacing: 0;
+  }
+  .letter-line {
+    width: 30px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+  }
+  .space-slot { width: 16px; }
+
+  /* KEYBOARD */
+  .keyboard {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  .key {
+    width: 38px;
+    height: 40px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font);
+  }
+  .key:hover:not(:disabled) {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    transform: translateY(-2px);
+  }
+  .key:disabled { opacity: 0.2; cursor: not-allowed; transform: none; }
+  .key.hit { background: rgba(92,230,192,0.15); border-color: var(--correct); color: var(--correct); }
+  .key.miss { background: rgba(240,106,106,0.1); border-color: var(--wrong); color: var(--wrong); }
+
+  /* RESULT BANNER */
+  .banner {
+    display: none;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 500;
+    text-align: center;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+  .banner.win { background: rgba(92,230,192,0.12); border: 1px solid var(--correct); color: var(--correct); }
+  .banner.lose { background: rgba(240,106,106,0.1); border: 1px solid var(--wrong); color: var(--wrong); }
+
+  /* BUTTONS */
+  .btn-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    font-family: var(--font);
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #6a5fe0; }
+  .btn-ghost { background: var(--surface2); color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+
+  /* FINAL SCREEN */
+  #final-screen {
+    display: none;
+    text-align: center;
+    padding: 1rem 0;
+  }
+  #final-screen .emoji { font-size: 48px; margin-bottom: 1rem; }
+  #final-screen .big { font-size: 42px; font-weight: 700; color: var(--accent); }
+  #final-screen .sub { font-size: 15px; color: var(--muted); margin: 8px 0 1.5rem; }
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 1rem 0 1.5rem;
+  }
+  .res-cell {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+  }
+  .res-cell .rc-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .res-cell .rc-val { font-size: 22px; font-weight: 700; color: var(--text); }
+
+  /* ERRORS INDICATOR */
+  .errors-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+  }
+  .err-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .err-dot.active { background: var(--wrong); box-shadow: 0 0 6px rgba(240,106,106,0.5); }
+
+  footer {
+    margin-top: 2rem;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="label">⚗️ Minijuego educativo</div>
+  <h1>Ahorcado · Química Orgánica</h1>
+  <p>20 compuestos y conceptos clave — ¡adivínalos todos!</p>
+</header>
+
+<div class="card">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="stat-pill">Palabra <span id="ui-cur">1</span>/<span id="ui-total">20</span></div>
+    <div class="progress-track"><div class="progress-fill" id="ui-prog" style="width:0%"></div></div>
+    <div class="stat-pill">⭐ <span id="ui-score">0</span> pts</div>
+    <div class="errors-dots" id="err-dots"></div>
+  </div>
+
+  <!-- GALLOWS -->
+  <div class="gallows-wrap">
+    <svg id="gallows-svg" width="180" height="160" viewBox="0 0 180 160" xmlns="http://www.w3.org/2000/svg">
+      <!-- static structure -->
+      <line x1="20" y1="155" x2="160" y2="155" stroke="#2e3352" stroke-width="3" stroke-linecap="round"/>
+      <line x1="50" y1="155" x2="50" y2="8"   stroke="#2e3352" stroke-width="3" stroke-linecap="round"/>
+      <line x1="50" y1="8"   x2="110" y2="8"  stroke="#2e3352" stroke-width="3" stroke-linecap="round"/>
+      <line x1="110" y1="8"  x2="110" y2="26" stroke="#2e3352" stroke-width="3" stroke-linecap="round"/>
+      <!-- body parts (hidden by default) -->
+      <circle id="p-head" cx="110" cy="38" r="12" stroke="#f06a6a" stroke-width="2" fill="none" style="display:none"/>
+      <line id="p-body" x1="110" y1="50" x2="110" y2="100" stroke="#f06a6a" stroke-width="2" stroke-linecap="round" style="display:none"/>
+      <line id="p-la"   x1="110" y1="63" x2="90"  y2="82"  stroke="#f06a6a" stroke-width="2" stroke-linecap="round" style="display:none"/>
+      <line id="p-ra"   x1="110" y1="63" x2="130" y2="82"  stroke="#f06a6a" stroke-width="2" stroke-linecap="round" style="display:none"/>
+      <line id="p-ll"   x1="110" y1="100" x2="93" y2="126" stroke="#f06a6a" stroke-width="2" stroke-linecap="round" style="display:none"/>
+      <line id="p-rl"   x1="110" y1="100" x2="127" y2="126" stroke="#f06a6a" stroke-width="2" stroke-linecap="round" style="display:none"/>
+    </svg>
+  </div>
+
+  <!-- HINT -->
+  <div class="hint-badge">
+    <strong>Pista:</strong>
+    <span id="ui-hint">—</span>
+  </div>
+
+  <!-- WORD -->
+  <div class="word-row" id="ui-word"></div>
+
+  <!-- BANNER -->
+  <div class="banner" id="ui-banner"></div>
+
+  <!-- KEYBOARD -->
+  <div class="keyboard" id="ui-keys"></div>
+
+  <!-- BUTTONS -->
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="skipWord()">Saltar →</button>
+    <button class="btn btn-primary" id="btn-next" onclick="nextWord()" style="display:none">Siguiente →</button>
+  </div>
+</div>
+
+<!-- FINAL SCREEN -->
+<div class="card" id="final-screen">
+  <div class="emoji" id="fin-emoji">🏆</div>
+  <div class="big" id="fin-score"></div>
+  <div class="sub" id="fin-sub"></div>
+  <div class="results-grid">
+    <div class="res-cell"><div class="rc-label">Correctas</div><div class="rc-val" id="fin-correct" style="color:#5ce6c0"></div></div>
+    <div class="res-cell"><div class="rc-label">Fallidas</div><div class="rc-val" id="fin-wrong" style="color:#f06a6a"></div></div>
+    <div class="res-cell"><div class="rc-label">Puntaje total</div><div class="rc-val" id="fin-pts"></div></div>
+    <div class="res-cell"><div class="rc-label">Precisión</div><div class="rc-val" id="fin-acc"></div></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="restart()">Jugar de nuevo</button>
+  </div>
+</div>
+
+<footer>
+  Hecho con Claude · <a href="https://pages.github.com" target="_blank">Publica en GitHub Pages</a> gratis
+</footer>
+
+<script>
+const WORDS = [
+  { word: "METANOL",       hint: "Alcohol más simple · fórmula CH₃OH · también llamado alcohol de madera" },
+  { word: "ETANOL",        hint: "Alcohol presente en bebidas fermentadas · C₂H₅OH" },
+  { word: "BENCENO",       hint: "Hidrocarburo aromático con 6 carbonos en anillo · C₆H₆" },
+  { word: "ACETONA",       hint: "Cetona más sencilla · disolvente común · (CH₃)₂CO" },
+  { word: "PROPANO",       hint: "Alcano de 3 carbonos · usado en cocinas de gas · C₃H₈" },
+  { word: "GLUCOSA",       hint: "Monosacárido de 6 carbonos · principal fuente de energía celular" },
+  { word: "FENOL",         hint: "Benceno con un grupo -OH · antiséptico clásico" },
+  { word: "TOLUENO",       hint: "Benceno con un grupo metilo (-CH₃) · disolvente industrial" },
+  { word: "ETILENO",       hint: "Alqueno de 2 carbonos con doble enlace · CH₂=CH₂ · maduración de frutas" },
+  { word: "ACETILENO",     hint: "Alquino de 2 carbonos con triple enlace · HC≡CH · soladura" },
+  { word: "GLICEROL",      hint: "Triol de 3 carbonos · componente de grasas y aceites · C₃H₈O₃" },
+  { word: "SACAROSA",      hint: "Disacárido de glucosa + fructosa · azúcar de mesa · C₁₂H₂₂O₁₁" },
+  { word: "CAFEINA",       hint: "Alcaloide estimulante presente en el café · base xántica" },
+  { word: "CELULOSA",      hint: "Polisacárido estructural de las plantas · polímero de glucosa" },
+  { word: "BUTANO",        hint: "Alcano de 4 carbonos · componente de gas licuado · C₄H₁₀" },
+  { word: "NAFTALENO",     hint: "Hidrocarburo aromático de dos anillos fusionados · C₁₀H₈ · naftalina" },
+  { word: "ESTEARICO",     hint: "Ácido graso saturado de 18 carbonos · presente en manteca de cacao" },
+  { word: "GLICINA",       hint: "Aminoácido más simple · sin cadena lateral quiral · H₂N-CH₂-COOH" },
+  { word: "COLESTEROL",    hint: "Lípido esteroide esencial · precursor de hormonas y vitamina D" },
+  { word: "FORMALDEHIDO",  hint: "Aldehído más simple · HCHO · usado en conservación de tejidos" },
+];
+
+const MAX_ERRORS = 6;
+const PARTS = ['p-head','p-body','p-la','p-ra','p-ll','p-rl'];
+const ALPHA = 'ABCDEFGHIJKLMNÑOPQRSTUVWXYZ';
+
+let state = {};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function restart() {
+  document.querySelector('.card').style.display = 'block';
+  document.getElementById('final-screen').style.display = 'none';
+  state = {
+    words: shuffle(WORDS),
+    idx: 0,
+    score: 0,
+    correct: 0,
+    wrong: 0,
+  };
+  loadWord();
+}
+
+function loadWord() {
+  const entry = state.words[state.idx];
+  state.word = entry.word.toUpperCase();
+  state.guessed = new Set();
+  state.errors = 0;
+
+  // update progress
+  document.getElementById('ui-cur').textContent = state.idx + 1;
+  document.getElementById('ui-total').textContent = state.words.length;
+  document.getElementById('ui-prog').style.width = ((state.idx) / state.words.length * 100) + '%';
+  document.getElementById('ui-score').textContent = state.score;
+  document.getElementById('ui-hint').textContent = entry.hint;
+
+  // error dots
+  buildDots();
+
+  // hide body parts
+  PARTS.forEach(id => document.getElementById(id).style.display = 'none');
+
+  // render word
+  renderWord();
+
+  // keyboard
+  buildKeyboard();
+
+  // banner
+  const banner = document.getElementById('ui-banner');
+  banner.style.display = 'none';
+  document.getElementById('btn-next').style.display = 'none';
+}
+
+function buildDots() {
+  const container = document.getElementById('err-dots');
+  container.innerHTML = '';
+  for (let i = 0; i < MAX_ERRORS; i++) {
+    const d = document.createElement('div');
+    d.className = 'err-dot';
+    d.id = 'dot-' + i;
+    container.appendChild(d);
+  }
+}
+
+function renderWord() {
+  const container = document.getElementById('ui-word');
+  container.innerHTML = '';
+  state.word.split('').forEach(ch => {
+    if (ch === ' ') {
+      const sp = document.createElement('div');
+      sp.className = 'space-slot';
+      container.appendChild(sp);
+      return;
+    }
+    const slot = document.createElement('div');
+    slot.className = 'letter-slot';
+    const char = document.createElement('div');
+    char.className = 'letter-char';
+    char.textContent = state.guessed.has(ch) ? ch : '';
+    const line = document.createElement('div');
+    line.className = 'letter-line';
+    slot.appendChild(char);
+    slot.appendChild(line);
+    container.appendChild(slot);
+  });
+}
+
+function buildKeyboard() {
+  const container = document.getElementById('ui-keys');
+  container.innerHTML = '';
+  [...ALPHA].forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'key';
+    btn.textContent = ch;
+    btn.id = 'key-' + ch;
+    btn.onclick = () => guess(ch);
+    container.appendChild(btn);
+  });
+}
+
+function guess(ch) {
+  if (state.guessed.has(ch)) return;
+  state.guessed.add(ch);
+  const btn = document.getElementById('key-' + ch);
+  if (btn) btn.disabled = true;
+
+  if (state.word.includes(ch)) {
+    if (btn) btn.classList.add('hit');
+  } else {
+    if (btn) btn.classList.add('miss');
+    state.errors++;
+    const dot = document.getElementById('dot-' + (state.errors - 1));
+    if (dot) dot.classList.add('active');
+    if (state.errors <= PARTS.length) {
+      document.getElementById(PARTS[state.errors - 1]).style.display = 'block';
+    }
+  }
+
+  renderWord();
+  checkEndState();
+}
+
+function checkEndState() {
+  const wordLetters = [...new Set(state.word.replace(/ /g, '').split(''))];
+  const won = wordLetters.every(ch => state.guessed.has(ch));
+  const lost = state.errors >= MAX_ERRORS;
+
+  if (!won && !lost) return;
+
+  // disable keyboard
+  document.querySelectorAll('.key').forEach(b => b.disabled = true);
+
+  const banner = document.getElementById('ui-banner');
+  if (won) {
+    const bonus = Math.max(10, 20 - state.errors * 2);
+    state.score += bonus;
+    state.correct++;
+    document.getElementById('ui-score').textContent = state.score;
+    banner.className = 'banner win';
+    banner.textContent = '✓ ¡Correcto! +' + bonus + ' puntos';
+  } else {
+    state.wrong++;
+    // reveal word
+    [...state.word].forEach(ch => state.guessed.add(ch));
+    renderWord();
+    banner.className = 'banner lose';
+    banner.textContent = '✗ Era: ' + state.word;
+  }
+  banner.style.display = 'block';
+  document.getElementById('btn-next').style.display = 'inline-flex';
+}
+
+function nextWord() {
+  state.idx++;
+  if (state.idx >= state.words.length) {
+    showFinal();
+  } else {
+    loadWord();
+  }
+}
+
+function skipWord() {
+  state.wrong++;
+  state.idx++;
+  if (state.idx >= state.words.length) {
+    showFinal();
+  } else {
+    loadWord();
+  }
+}
+
+function showFinal() {
+  document.querySelector('.card').style.display = 'none';
+  const fin = document.getElementById('final-screen');
+  fin.style.display = 'block';
+  const pct = Math.round(state.correct / state.words.length * 100);
+  const emoji = pct >= 80 ? '🏆' : pct >= 60 ? '🎓' : pct >= 40 ? '🧪' : '📚';
+  document.getElementById('fin-emoji').textContent = emoji;
+  document.getElementById('fin-score').textContent = state.score + ' pts';
+  document.getElementById('fin-sub').textContent =
+    pct >= 80 ? '¡Excelente dominio de la química orgánica!' :
+    pct >= 60 ? '¡Buen trabajo! Sigue repasando.' :
+    '¡Sigue practicando, vas mejorando!';
+  document.getElementById('fin-correct').textContent = state.correct;
+  document.getElementById('fin-wrong').textContent = state.wrong;
+  document.getElementById('fin-pts').textContent = state.score;
+  document.getElementById('fin-acc').textContent = pct + '%';
+}
+
+// Start
+restart();
+</script>
+</body>
+</html>
